@@ -1,0 +1,32 @@
+<ion-view>
+	<ion-nav-title>
+        {{ sectionTitle }}
+	</ion-nav-title>
+	<ion-nav-buttons side="secondary">
+			<button class="button" ng-click="doRefresh()">
+				<i class="ion-refresh" style="font-size:30px"></i>
+			</button>
+      <button class="button" ng-click="">
+        Novo tópico
+      </button>
+    </ion-nav-buttons>
+	<ion-content>
+		<!--<ion-refresher
+			pulling-text="Deslize para atualizar"
+			on-refresh="doRefresh()">
+		</ion-refresher>-->
+		<ion-list>
+		<div ng-repeat="k in topicos track by $index">
+			<ion-item  class="item-text-wrap" ng-click="goToTopic($index,false)">
+				{{ k.topico.titulo }}<br>
+				<span style="color: #AAA">Postado por {{ k.author }} </span><br/><span style="color:#00F">({{ k.resp }} respostas )</span>
+				<!--<ion-option-button class="button-positive">
+					<i class="ion-skip-forward" style="font-size:40px"></i>
+				</ion-option-button>-->
+			</ion-item>
+			<a class="ion-skip-forward" style="font-size:30px;position:absolute;top:10px;right:10px" ng-click="goToTopic($index,true)"></a>
+		</div>
+		</ion-list>
+	</ion-content>
+</ion-view>
+<!--ng-href="#/t{{k.topico.linkT}}"-->

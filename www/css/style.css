@@ -1,0 +1,43 @@
+/* Empty. Add your own CSS if you like */
+.sec-header{
+	padding: 6px;
+	background-color: #DDF;
+}
+.author{
+	color: #BBB;
+}
+table{
+	border: solid 1px #00D;
+}
+td{
+	padding: 4px;
+}
+.postText{
+	margin-top: 7px !important;
+	margin-bottom: 7px !important;
+}
+img{
+	max-width: 100%;
+	max-height: 100%;
+}
+.level{
+	position: absolute;
+	top: 8px;
+	right: 16px;
+	color: #007;
+}
+.author{
+	color: #00D;
+	width: 70%;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.postDate{
+	display: inline-block !important;
+}
+.negativo{
+	color: red;
+}
+a:visited.icon{
+	color: #55F;
+}

@@ -1,0 +1,49 @@
+<ion-view>
+	<ion-nav-back-button class="button-clear" ng-click="goBack()">
+		<i class="ion-arrow-left-c"></i> Voltar
+	</ion-nav-back-button>
+	<ion-nav-buttons side="secondary">
+		<button class="button" ng-click="goPrev()">
+			<i class="ion-chevron-left" style="font-size:30px"></i>
+		</button>
+		<button class="button" ng-click="goToPage(0,true)">
+			{{actualPage}}
+		</button>
+		<button class="button" ng-click="goNext()">
+			<i class="ion-chevron-right" style="font-size:30px"></i>
+		</button>
+	</ion-nav-buttons>
+	<ion-content>
+		<div style="padding:4px;">
+			<h3>{{ topicTitle }}</h3>
+		</div>
+		<!--<div class="bar bar-header bar-stable">
+		  <h1 class="title">{{ topicTitle }}</h1>
+		</div>-->
+		<ion-list>
+		<div ng-repeat="k in posts track by $index">
+			<ion-item>
+				<div class="item item-thumbnail-left">
+		      <img ng-src="{{ k.avatar }}">
+		      <h2 class="author">{{ k.postAuthor }}</h2><h2 class="level">{{ k.level }}</h2>
+					<p>Mensagens: {{ k.msgs }}</p>
+					<p>Cadastro: {{ k.cadastro }}</p>
+		    </div>
+				<p class="postDate">{{ k.postDate }}</p>
+				<div style="text-align:right; font-size: 28px; top: -20px">
+					<div ng-if="!(firstPage && $index===0)">
+					<a href="#" class="icon ion-plus-circled"></a>
+					<strong ng-bind-html="k.rating"></strong>
+					<a href="#" class="icon ion-minus-circled"></a>
+					</div>
+				</div>
+				<div class="postText item-text-wrap" ng-bind-html="k.postText"></div>
+				<div style="text-align:right">
+					<a class="button button-positive">MP</a>
+					<a class="button button-positive">Quote</a>
+				</div>
+			</ion-item>
+		</div>
+		</ion-list>
+	</ion-content>
+</ion-view>

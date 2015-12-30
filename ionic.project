@@ -1,0 +1,14 @@
+{
+  "name": "uoljm",
+  "app_id": "d6c36acf",
+  "proxies": [
+    {
+      "path": "/forum/",
+      "proxyUrl": "http://forum.jogos.uol.com.br/"
+    },
+    {
+      "path": "/login/",
+      "proxyUrl": "https://acesso.uol.com.br/login.html"
+    }
+  ]
+}
