@@ -3,13 +3,16 @@
 		<i class="ion-arrow-left-c"></i> Voltar
 	</ion-nav-back-button>
 	<ion-nav-buttons side="secondary">
-		<button class="button" ng-click="goPrev()">
+		<button class="button" ng-show="isLogged" ng-click="goResp(0)">
+			Postar
+		</button>
+		<button class="button" ng-click="goPrev()" on-hold="goToPage(1,false)">
 			<i class="ion-chevron-left" style="font-size:30px"></i>
 		</button>
-		<button class="button" ng-click="goToPage(0,true)">
+		<button class="button">
 			{{actualPage}}
 		</button>
-		<button class="button" ng-click="goNext()">
+		<button class="button" ng-click="goNext()" on-hold="goToPage(0,true)">
 			<i class="ion-chevron-right" style="font-size:30px"></i>
 		</button>
 	</ion-nav-buttons>
@@ -25,7 +28,7 @@
 			<ion-item>
 				<div class="item item-thumbnail-left">
 		      <img ng-src="{{ k.avatar }}">
-		      <h2 class="author">{{ k.postAuthor }}</h2><h2 class="level">{{ k.level }}</h2>
+		      <h2 class="author">{{ k.postAuthor }}</h2><!--<h2 class="level">{{ k.level }}</h2>-->
 					<p>Mensagens: {{ k.msgs }}</p>
 					<p>Cadastro: {{ k.cadastro }}</p>
 		    </div>
@@ -39,8 +42,8 @@
 				</div>
 				<div class="postText item-text-wrap" ng-bind-html="k.postText"></div>
 				<div style="text-align:right">
-					<a class="button button-positive">MP</a>
-					<a class="button button-positive">Quote</a>
+					<a class="button button-positive userAction">MP</a>
+					<a class="button button-positive userAction">Quote</a>
 				</div>
 			</ion-item>
 		</div>

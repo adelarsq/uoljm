@@ -3,18 +3,18 @@
         {{ sectionTitle }}
 	</ion-nav-title>
 	<ion-nav-buttons side="secondary">
-			<button class="button" ng-click="doRefresh()">
+			<!--<button class="button" ng-click="doRefresh()">
 				<i class="ion-refresh" style="font-size:30px"></i>
-			</button>
-      <button class="button" ng-click="">
+			</button>-->
+      <button class="button" ng-click="" ng-show="isLogged">
         Novo tópico
       </button>
     </ion-nav-buttons>
 	<ion-content>
-		<!--<ion-refresher
+		<ion-refresher
 			pulling-text="Deslize para atualizar"
 			on-refresh="doRefresh()">
-		</ion-refresher>-->
+		</ion-refresher>
 		<ion-list>
 		<div ng-repeat="k in topicos track by $index">
 			<ion-item  class="item-text-wrap" ng-click="goToTopic($index,false)">

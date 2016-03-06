@@ -3,33 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
-    	<!-- Good default declaration:
-        * gap: is required only on iOS (when using UIWebView) and is needed for JS->native communication
-        * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
-        * Disables use of eval() and inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
-            * Enable inline JS: add 'unsafe-inline' to default-src
-            * Enable eval(): add 'unsafe-eval' to default-src
 
-    <meta http-equiv="Content-Security-Policy" content="default-src &apos;self&apos; data: gap: https://ssl.gstatic.com; style-src &apos;self&apos; &apos;unsafe-inline&apos;; media-src *">-->
-
-    <!-- Allow everything but only from the same origin and foo.com
-    <meta http-equiv="Content-Security-Policy" content="default-src &apos;self&apos; forum.jogos.uol.com">-->
-
-    <!-- This policy allows everything (eg CSS, AJAX, object, frame, media, etc) except that
-        * CSS only from the same origin and inline styles,
-        * scripts only from the same origin and inline styles, and eval()
-    -->
-    <meta http-equiv="Content-Security-Policy" content="default-src *; style-src &apos;self&apos; &apos;unsafe-inline&apos;; script-src &apos;self&apos; &apos;unsafe-inline&apos; &apos;unsafe-eval&apos;">
-
-    <!-- Allows XHRs only over HTTPS on the same domain.
-    <meta http-equiv="Content-Security-Policy" content="default-src &apos;self&apos; https:">-->
-
-    <!-- Allow iframe to https://cordova.apache.org/
-    <meta http-equiv="Content-Security-Policy" content="default-src &apos;self&apos;; frame-src &apos;self&apos; https://cordova.apache.org"> -->
-
+    <!--CSP-->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; script-src * 'self' 'unsafe-inline' 'unsafe-eval'">
 
     <title></title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <link href="lib/ionic/css/ionic.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 
@@ -53,8 +31,9 @@
 			<ion-nav-back-button class="button-clear">
         <i class="ion-arrow-left-c"></i> Voltar
 			</ion-nav-back-button>
+      <ion-spinner icon="android" ng-show="asyncTask"></ion-spinner>
 			<ion-nav-buttons side="right">
-			<a href="#/l/login" class="button">
+			<a href="#/l/login" class="button" ng-hide="isLogged">
 				Entrar
 			</a>
     </ion-nav-buttons>

@@ -1,15 +1,3 @@
-if (!isUserLogged()) {
-    var user = 'usuario';
-    var pass = 'senha';
- 
-    document.getElementById('user').value = user;
-    document.getElementById('pass').value = pass;
- 
-    document.getElementsByClassName('submit-login-input')[0].click();
-} else {
-    console.log("Usuário já está logado.");
-}
- 
-function isUserLogged() {
-    return document.getElementsByClassName('top-user')[0];
-}
+document.getElementsByTagName("input")[0].value = user;
+document.getElementsByTagName("input")[1].value = pass;
+document.getElementsByTagName("form")[0].submit();

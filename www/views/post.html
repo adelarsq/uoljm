@@ -1,0 +1,14 @@
+<ion-view>
+  <ion-nav-title>
+    {{ titleString[k] }} tópico
+  </ion-nav-title>
+  <ion-content>
+    <form>
+      <input ng-show="(k===1)" ng-model="titleTopic"/>
+      <textarea ng-model="content"></textarea>
+    </form>
+    <button class="button button-positive" ng-click="send(k)">
+      Enviar
+    </button>
+  </ion-content>
+</ion-view>

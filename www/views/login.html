@@ -1,22 +1,26 @@
 <ion-view>
   <ion-nav-title>
-    Entrar no Fórum
+    {{loginstat}}
   </ion-nav-title>
   <ion-content>
-    <form>
+    <form ng-if="!(isLogged)">
       <div class="list">
         <label class="item item-input item-stacked-label">
           <span class="input-label">E-mail</span>
-          <input type="text" placeholder="">
+          <input type="email" placeholder="" ng-model="user">
         </label>
         <label class="item item-input item-stacked-label">
-          <span class="input-label">Senha</span>
-          <input type="text" placeholder="">
+          <span class="input-label">Senha:</span>
+          <input type="password" placeholder="" ng-model="pass">
         </label>
       </div>
-      <button class="button button-block button-positive" ng-click="login('','')">
+      <button class="button button-block button-positive" ng-click="login(user,pass)" ng-hide="asyncTask">
         Entrar
       </button>
+      <p style="padding-left:8px">{{stat}}</p>
     </form>
+    <div id="painel" ng-if="isLogged">
+      <h1>{{user}}</h1>
+    </div>
   </ion-content>
 </ion-view>

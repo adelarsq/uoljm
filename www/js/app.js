@@ -5,11 +5,39 @@
 // the 2nd parameter is an array of 'requires'
 
 forumURL = 'http://forum.jogos.uol.com.br/';  //para desenvolvimento mobile
-//forumURL = '/forum/';                       //para testes no navegador via proxy; comente e descomente somente aqui.
+forumURL = '/forum/';                       //para testes no navegador via proxy; comente e descomente somente aqui.
+IdF = 57;
+
+//Tratamento de eventos
+loginHandler = function(event){
+  console.log(event.url);
+  if(event.url.indexOf('sac')===-1){
+    showErrorMsg('Usuário ou senha incorreta');
+  } else {
+    localStorage.setItem('user',user);
+    localStorage.setItem('pass',pass);
+    localStorage.setItem('isLogged','1');
+    $rootScope.asyncTask = false;
+  }
+  $rootScope.isLogged = true;
+  logBrowser.removeEventListener('loadstop',loginHandler);
+
+}
+postMsgHandler = function(content,mode){
+  if(mode=='topico')
+    logBrowser.executeScript({code:'PostFunctions.insertPost("'+idF+','+content+'")'});
+  else if(mode=='post')
+    logBrowser.executeScript({code:'PostFunctions.insertTopic("'+content+'")'});
+  logBrowser.removeEventListener('loadstop',postMsgHandler);
+}
+
+doLogin = function(){
+  acessoUOL.log(localStorage.getItem('user'),localStorage.getItem('pass');
+}
 
 angular.module('starter', ['ionic'])
 
-.run(function($ionicPlatform,$rootScope,$ionicHistory) {
+.run(function($ionicPlatform,$rootScope,$ionicHistory,$interval,acessoUOL) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
@@ -19,9 +47,22 @@ angular.module('starter', ['ionic'])
     if(window.StatusBar) {
       StatusBar.styleDefault();
     }
+    $rootScope.asyncTask = false;
+    //Variáveis de acesso global
     xhttp = new XMLHttpRequest;
     forum = document.createElement('div');
-    iframe = document.createElement("iframe");
+    logBrowser = window.open('https://acesso.uol.com.br','_blank','hidden=yes');
+
+    $rootScope.$watch('isLogged',function(){
+
+    });
+
+    if( !localStorage.getItem('isLogged') || localStorage.getItem('isLogged') != 1 )
+      $rootScope.isLogged = false;
+    else {
+      $rootScope.isLogged = true;
+      $interval(doLogin),5*60*1000);
+    }
   });
 })
 
@@ -46,91 +87,71 @@ angular.module('starter', ['ionic'])
       url: '/l/login',
       templateUrl: 'views/login.html',
       controller: 'loginController'
+    })
+    .state('post',{
+      url: '/p/post',
+      templateUrl: 'views/post.html',
+      controller: 'sendPostController'
     });
 	$urlRouterProvider.otherwise('/');
 })
 
+.service('acessoUOL',function($q){
 
-.factory('login',['$http',function(){
+  var log = function(user,pass){
+    var d = $q.defer();
+    $rootScope.asyncTask = true;
+    user = user.trim();
+    var loginscript = 'document.getElementsByTagName("input")[0].value = "'+user+'"; \
+                      document.getElementsByTagName("input")[1].value = "'+pass+'"; \
+                      document.getElementsByTagName("form")[0].submit(); \
+                      return 0;';
+    logBrowser.addEventListener('loaderror',function(event){
+      def.resolve('Falha no envio de dados');
+    });
+    logBrowser.addEventListener('loadstop',loginHandler);
+    logBrowser.executeScript({code:loginscript},function(){});
+  }
+  return {
+    log: log
+  }
+})
 
-}])
+.controller('loginController',['$scope','$rootScope','$interval','acessoUOL',function($scope,$rootScope,$interval,acessoUOL){
 
-.controller('loginController',['$scope',function($scope){
-  $scope.login = function(user,pass){
-		user = encodeURI(''); //usuario
-		pass = encodeURI(''); //senha
-		var uniqueString = "XDomain";
-		iframe.style.display = "none";
-		iframe.contentWindow.name = uniqueString;
-		// construct a form with hidden inputs, targeting the iframe
-		form = document.createElement("form");
-		form.target = uniqueString;
-		form.action = "https://acesso.uol.com.br/login.html?skin=forum-jogos";
-		form.method = "POST";
+  function showErrorMsg(err){
+    $scope.stat = 'Erro ao logar no fórum. ('+err+')';
+    $rootScope.asyncTask = false;
+  };
 
-		// repeat for each parameter
-		var input0 = document.createElement("input");
-		var input1 = document.createElement("input");
-		var input2 = document.createElement("input");
-		var input3 = document.createElement("input");
-		var input4 = document.createElement("input");
+  $rootScope.asyncTask = false;
+  $scope.login = acessoUOL.log($scope.user,$scope.pass);
 
-		input0.type = "hidden";
-		input0.name = "user";
-		input0.value = user;
-		form.appendChild(input0);
+  $scope.logoff = function(){
+    localStorage.setItem('isLogged','0');
+    $rootScope.isLogged = false;
+  }
 
-		input1.type = "hidden";
-		input1.name = "pass";
-		input1.value = pass;
-		form.appendChild(input1);
-
-		input2.type = "hidden";
-		input2.name = "skin";
-		input2.value = "babelconteudo";
-		form.appendChild(input2);
-
-		input3.type = "hidden";
-		input3.name = "dest";
-		input3.value = "REDIR|http://forum.jogos.uol.com.br/";
-		form.appendChild(input3);
-
-		input4.type = "hidden";
-		input4.name = "submit";
-		input4.value = "Enviar";
-		form.appendChild(input4);
-
-		document.body.appendChild(form);
-
-		document.createElement("form").submit.call(form);
-	};
 }])
 
 .controller('indexController',['$scope',function($scope){
-	$scope.showPopup = function(){
 
-  };
 }])
 
 .controller('topicController',['$rootScope','$scope','$state','$stateParams',function($rootScope,$scope,$state,$stateParams){
 	var relTopics = {
-		"noticias":"noticias_f_56",
-		"nintendo":"ds-wii-wii-u_f_39",
-		"pc":"pc_f_40",
-		"sony":"playstation-4-playstation-3-ps-vita_f_41",
-		"ms":"xbox-one-xbox-360_f_43",
-		"museu":"museu-do-videogame_f_44",
-		"vale_tudo":"vale_tudo_f_57"
+		"noticias":"56",
+		"nintendo":"39",
+		"pc":"40",
+		"sony":"41",
+		"ms":"43",
+		"museu":"44",
+		"vale_tudo":"57"
 	};
-  var section = relTopics[$stateParams.sec];
-	/*topico = {
-		"topico":{
-			"titulo":"",
-			"linkT":""
-		},
-		"author":"",
-		"resp":0
-	};*/
+
+  var section = "_f_" + relTopics[$stateParams.sec];
+
+  $scope.topicos = [];
   xhttpRequestHandle = function(){
 		if(xhttp.readyState == 4 && xhttp.status == 200){
 			forum.innerHTML = xhttp.responseText;
@@ -167,8 +188,8 @@ angular.module('starter', ['ionic'])
 
 	$scope.doRefresh = function(){
     xhttp.onreadystatechange = xhttpRequestHandle;
-		xhttp.open('GET', forumURL+section,true);
-		xhttp.send();
+  	xhttp.open('GET', forumURL+section,true);
+  	xhttp.send();
 	};
 
   $scope.goBack = function(){
@@ -181,6 +202,7 @@ angular.module('starter', ['ionic'])
     console.log($rootScope.numberPages);
     var q = '';
     if(isLastMsg) q = '?page='+$rootScope.numberPages;
+    $rootScope.tpcId = topicos[index].topico.linkT.substr(topicos[index].topico.linkT.indexOf('t_',1)+2,7);
     $state.go('topic',{topc:topicos[index].topico.linkT+q},{});
     console.log(topicos[index].topico.linkT+q);
   }
@@ -191,6 +213,9 @@ angular.module('starter', ['ionic'])
   if($rootScope.lastMsg) $scope.actualPage = $rootScope.numberPages;
   $scope.actualPage = 1;
 
+  if($rootScope.isLogged)
+    topicBrowser = window.open('http://forum.jogos.uol.com.br/_t_'+tpcId,'_blank','hidden=yes');
+
 	xhttp.onreadystatechange = function(){
 		if(xhttp.readyState == 4 && xhttp.status == 200){
       forum.innerHTML = xhttp.responseText;
@@ -198,7 +223,7 @@ angular.module('starter', ['ionic'])
       $scope.secTitle = forum.getElementsByClassName('breadcrumb-actual-page')[0].innerHTML;
       $scope.topicTitle = forum.getElementsByClassName('titleTopic')[0].getElementsByTagName('h1')[0].innerHTML;
       firstPage = false;
-      if($stateParams.topc.lastIndexOf('?')===-1||$location.search().page==='1'){
+      if($scope.actualPage===1){
         firstPage = true;
         rawTopic = forum.getElementsByClassName('autoClear  topicRow  post')[0];
         topicDate = forum.getElementsByClassName('topic-date')[0].innerHTML;
@@ -240,6 +265,7 @@ angular.module('starter', ['ionic'])
       // joga na view
       $scope.posts = posts;
       $scope.$apply();
+      $ionicScrollDelegate.scrollTop();
 		}
 	}
 
@@ -265,7 +291,6 @@ angular.module('starter', ['ionic'])
     }
     xhttp.open('GET', forumURL+topic+'?page='+$scope.actualPage,true);
     xhttp.send();
-    $ionicScrollDelegate.scrollTop();
   }
   $scope.goPrev = function(){
     $scope.actualPage--;
@@ -275,6 +300,23 @@ angular.module('starter', ['ionic'])
     }
     xhttp.open('GET', forumURL+topic+'?page='+$scope.actualPage,true);
     xhttp.send();
-    $ionicScrollDelegate.scrollTop();
   }
-}]);
+  $scope.goResp = function(mode){
+    $rootScope.postMode = mode;
+    $state.go('/p/post');
+  }
+}])
+
+.controller('sendPostController',function($scope,$rootScope,$ionicHistory){
+  $scope.titleString = ['Responder','Criar'];
+  $scope.send = function(mode,tpcId){
+    if(k==0){
+
+    } else {
+
+    }
+    logBrowser.addEventListener('loadstop',postMsgHandler);
+    logBrowser.executeScript({code:'location.replace("http://forum.jogos.uol.com.br/new_topic.jbb")'},function(){});
+  }
+
+});
