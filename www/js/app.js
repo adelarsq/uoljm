@@ -1,18 +1,58 @@
-// Ionic Starter App
+/*
+ * Fórum UOL Jogos Mobile - Híbrido! Porque no Javascript não há limites.
+ * Só uma documentadinha de leve... :-)
+ *
+ * Explicação geral:
+ * Olha, esse aplicativo é uma verdadeira gambiarra. Um workaround.
+ * Como a UOL só provê uma API de login pro pagseguro, vamos ter que pegar alguém pra logar pra gente.
+ * Esse "alguém" vai ser um navegador fantasma. Um bot.
+ * Então são duas Webviews pro aplicativo: um para o cordova e outro para o bot.
+ * Nossa aplicação vai injetar scripts nesse bot pra fazer tarefas que um usuário comum faria:
+ * Logar, postar (tópico ou resposta), avaliar um tópico com estrelas, negativar, positivar, mandar MP, etc.
+ * Para isso temos as funções do nosso querido DWR (Direct Web Remote), no código fonte HTML do fórum.
+ * Felizmente, o Dalton reuniu todas as funções de usuário em um só objeto. Em Javascript. E deixou em público.
+ * Isso vai facilitar as injeções de script. Scripts menores para funções simples.
+ * Para cada injeção de script, o bot vai sofrer um redirecionamento na página. Para cada redirecionamento,
+ * precisarei passar funções para tratar eventos de 'loadstop', obtendo assim a resposta de cada requisição.
+ * Não vou me aprofundar tanto. Isso é só um overview.
+ *
+ * Para tratar o bug do deslog, vai ser outra gambiarra também...
+ * Toda vez que o usuário entrar no aplicativo, o app deve verificar se ele já logou, acessando o localStorage.
+ * Se sim, ele vai pegar os dados de login armazenados no localStorage e logar automaticamente.
+ * Estando o usuário logado, o aplicativo deve logar a cada cinco minutos para o usuário...
+ * Isso vai acontecer até o usuário decidir deslogar manualmente, por meio de uma tela chamada 'login'.
+ *
+ * That's all, folks.
+ *
+ * Seção logo abaixo: variáveis globais, declaradas no objeto window.
+ *
+ */
 
-// angular.module is a global place for creating, registering and retrieving Angular modules
-// 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
-// the 2nd parameter is an array of 'requires'
 
-forumURL = 'http://forum.jogos.uol.com.br/';  //para desenvolvimento mobile
-forumURL = '/forum/';                       //para testes no navegador via proxy; comente e descomente somente aqui.
-IdF = 57;
+// <--- Variáveis globais. --->
 
-//Tratamento de eventos
-loginHandler = function(event){
+  // -> Subseção: navegação.
+window.forumURL = 'http://forum.jogos.uol.com.br/';   // Para desenvolvimento mobile, caso queiro rodar no seu celular.
+                                                      // Também conhecido como 'modo produção';
+                                                      //
+window.forumURL = '/forum/';                          // Para testes no navegador via proxy; comente e descomente somente aqui.
+                                                      // Também conhecido como 'modo desenvolvimento';
+                                                      //
+window.IdF = 57;                                      // Variávelzinha pra redirecionar pra alguma seção do fórum.
+                                                      // Apenas para debug.
+
+  // -> Subseção: Tratamento de eventos.
+  //
+  // loginHandler é uma função que será executada caso o usuário decida logar.
+  // Em caso de sucesso, o aplicativo vai gravar o usuário e senha até ele deslogar.
+  // Não interessa se ele sair do app. Toda vez que ele entrar, ele deve logar automaticamente.
+  // E, ainda, logará de tempo em tempo, de forma automatizada, para evitar o deslog.
+  // Em caso de falha, deve aparecer uma popup avisando que ocorreu algum erro....
+
+window.loginHandler = function(event){
   console.log(event.url);
-  if(event.url.indexOf('sac')===-1){
-    showErrorMsg('Usuário ou senha incorreta');
+  if(event.url.indexOf('sac')===-1){ // Se redirecionar para o SAC do UOL, é porque logou.
+    //Usuário ou senha incorreta.
   } else {
     localStorage.setItem('user',user);
     localStorage.setItem('pass',pass);
@@ -20,51 +60,76 @@ loginHandler = function(event){
     $rootScope.asyncTask = false;
   }
   $rootScope.isLogged = true;
-  logBrowser.removeEventListener('loadstop',loginHandler);
-
+  logBrowser.removeEventListener('loadstop',window.loginHandler);
 }
-postMsgHandler = function(content,mode){
+
+    // postMsgHandler é uma função que será executada caso o usuário poste algo
+    // esse algo pode ser um post normal (resposta a um tópico) ou um tópico
+    // deverá injetar um script no nosso navegador fantasma
+    // e depois adicionar outro handler para informar se houve sucesso ou falha....
+
+window.postMsgHandler = function(content,mode){
   if(mode=='topico')
-    logBrowser.executeScript({code:'PostFunctions.insertPost("'+idF+','+content+'")'});
+    logBrowser.executeScript({code:'PostFunctions.insertPost("'+window.idF+','+content+'")'});
   else if(mode=='post')
     logBrowser.executeScript({code:'PostFunctions.insertTopic("'+content+'")'});
-  logBrowser.removeEventListener('loadstop',postMsgHandler);
+  logBrowser.removeEventListener('loadstop',window.postMsgHandler);
 }
 
-doLogin = function(){
-  acessoUOL.log(localStorage.getItem('user'),localStorage.getItem('pass');
-}
 
-angular.module('starter', ['ionic'])
+  // -> Subseção: Extração dos dados. Comunicação com o servidor do UOL.
 
-.run(function($ionicPlatform,$rootScope,$ionicHistory,$interval,acessoUOL) {
+    // XHR Object. Nosso elemento chave para a comunicação.
+window.xhttp = new XMLHttpRequest;
+    // Container para armazenar a resposta das XHR Requests. E manipulação de DOM, é claro.
+window.forum = document.createElement('div');
+    // Declaração do nosso navegador fantasma. Vamos injetar alguns scripts nele posteriormente.
+window.logBrowser = window.open('https://acesso.uol.com.br','_blank','hidden=yes');
+
+    // ***  Bônus: window.localStorage, que armazenará três informações:
+    //      Usuário, senha e isLogged (que indica se o usuário está logado ou não).
+
+
+// <--- Declaração do módulo Angular. --->
+
+angular.module('ForumUOLJogos', ['ionic'])
+
+// Script de inicialização. Toda vez que o aplicativo for inicializado, isso aqui vai executar...
+.run(function($ionicPlatform,$rootScope,$interval,acessoUOL) {
   $ionicPlatform.ready(function() {
-    // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
-    // for form inputs)
+
+    // Definimos algumas variáveis do rootScope.
+    // 'rootScope' seria o scope global do Angular.
+    // Qualquer view pode acessar o rootScope.
+    // Precisamos do rootScope para as views saberem se há algum processo assíncrono em andamento,
+    // Ou se o usuário está logado para esconder ou mostrar alguns botões, por exemplo.
+    // Nossos campos do rootScope:
+    $rootScope.asyncTask = null;    //Indica se há algum async em andamento.
+    $rootScope.isLogged = null;     //Indica se o usuário está logado.
+    $rootScope.numberPages = null;  //Contém o número de páginas de um tópico...
+                                    //Usado na transição da seção para o tópico.
+
+    // Alguns handlers para detecção de teclado...
     if(window.cordova && window.cordova.plugins.Keyboard) {
       cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
     }
     if(window.StatusBar) {
       StatusBar.styleDefault();
     }
-    $rootScope.asyncTask = false;
-    //Variáveis de acesso global
-    xhttp = new XMLHttpRequest;
-    forum = document.createElement('div');
-    logBrowser = window.open('https://acesso.uol.com.br','_blank','hidden=yes');
 
-    $rootScope.$watch('isLogged',function(){
-
-    });
-
-    if( !localStorage.getItem('isLogged') || localStorage.getItem('isLogged') != 1 )
+    // Verifica se o usuário está logado. Se for o caso, automatizar o login de cinco em cinco minutos...
+    if( !localStorage.getItem('isLogged') || localStorage.getItem('isLogged') == '0' )
       $rootScope.isLogged = false;
     else {
       $rootScope.isLogged = true;
       $interval(doLogin),5*60*1000);
     }
+
   });
 })
+
+
+// <--- Configuração: rotas do aplicativo. Cada view (ou tela) vai ter um controller, como de tradição. --->
 
 .config(function($stateProvider,$urlRouterProvider){
 	$stateProvider
@@ -96,6 +161,9 @@ angular.module('starter', ['ionic'])
 	$urlRouterProvider.otherwise('/');
 })
 
+
+// <--- Nosso serviço que injetará script no navegador fantasma para logar o usuário... --->
+
 .service('acessoUOL',function($q){
 
   var log = function(user,pass){
@@ -105,40 +173,54 @@ angular.module('starter', ['ionic'])
     var loginscript = 'document.getElementsByTagName("input")[0].value = "'+user+'"; \
                       document.getElementsByTagName("input")[1].value = "'+pass+'"; \
                       document.getElementsByTagName("form")[0].submit(); \
-                      return 0;';
+                      undefined;';
     logBrowser.addEventListener('loaderror',function(event){
       def.resolve('Falha no envio de dados');
     });
-    logBrowser.addEventListener('loadstop',loginHandler);
+    logBrowser.addEventListener('loadstop',window.loginHandler);
     logBrowser.executeScript({code:loginscript},function(){});
   }
   return {
     log: log
   }
+
 })
 
+
+// <--- Começam aqui os controllers para as views... --->
+
 .controller('loginController',['$scope','$rootScope','$interval','acessoUOL',function($scope,$rootScope,$interval,acessoUOL){
+  // Controller da tela de login...
+  // Aqui o usuário vai logar, chamando o nosso serviço 'acessoUOL'.
+  // Se o login for bem sucedido OU se o usuário já estiver logado, a tela de login
+  // renderizará um 'painel de usuário', com o nome do usuário, as opções de deslogar e de ler as MPs.
+
+  $rootScope.asyncTask = false;
 
   function showErrorMsg(err){
     $scope.stat = 'Erro ao logar no fórum. ('+err+')';
     $rootScope.asyncTask = false;
   };
 
-  $rootScope.asyncTask = false;
   $scope.login = acessoUOL.log($scope.user,$scope.pass);
 
   $scope.logoff = function(){
-    localStorage.setItem('isLogged','0');
+    window.localStorage.setItem('isLogged','0');
     $rootScope.isLogged = false;
   }
 
 }])
 
 .controller('indexController',['$scope',function($scope){
-
+  // inútil? Melhor deixar, caso precise num futuro próximo...
 }])
 
 .controller('topicController',['$rootScope','$scope','$state','$stateParams',function($rootScope,$scope,$state,$stateParams){
+  // Controller da seção do fórum...
+  // Nada de especial aqui. O usuário vai ver as informações:
+  // Titulo da seção no header, titulos dos tópicos, autores e no. de respostas
+  // Ao arrastar a lista pra baixo, ela vai atualizar sozinha.
+
 	var relTopics = {
 		"noticias":"56",
 		"nintendo":"39",
@@ -151,14 +233,15 @@ angular.module('starter', ['ionic'])
 
   var section = "_f_" + relTopics[$stateParams.sec];
 
+  // <-- Códigozinho para extrair e tratar dados dos tópicos... -->
   $scope.topicos = [];
   xhttpRequestHandle = function(){
-		if(xhttp.readyState == 4 && xhttp.status == 200){
-			forum.innerHTML = xhttp.responseText;
-      $scope.sectionTitle = forum.getElementsByClassName('breadcrumb-actual-page')[0].innerHTML;
-			topicsName = forum.getElementsByClassName("topicos");
-			topicsAuthors = forum.getElementsByClassName("autor");
-			topicsResp = forum.getElementsByClassName("respostas");
+		if(window.xhttp.readyState == 4 && window.xhttp.status == 200){
+			window.forum.innerHTML = window.xhttp.responseText;
+      $scope.sectionTitle = window.forum.getElementsByClassName('breadcrumb-actual-page')[0].innerHTML;
+			topicsName = window.forum.getElementsByClassName("topicos");
+			topicsAuthors = window.forum.getElementsByClassName("autor");
+			topicsResp = window.forum.getElementsByClassName("respostas");
 			$scope.topicos = angular.copy([]);
 			topicos = [];
 			for(var i = 0; i<topicsName.length; i++){
@@ -178,18 +261,22 @@ angular.module('starter', ['ionic'])
 			}
 			$scope.topicos = topicos;
       $scope.$broadcast('scroll.refreshComplete');
-  		$scope.$apply();
+  		$scope.$apply();  // Nem sei se precisa mesmo de apply aqui... Estava tendo problemas
+                        // na renderização da lista e parece que isso aqui resolveu... :lol:
 		}
 	}
-	xhttp.onreadystatechange = xhttpRequestHandle;
+	window.xhttp.onreadystatechange = xhttpRequestHandle;
 
-	xhttp.open('GET', forumURL+section,true);
-	xhttp.send();
+	window.xhttp.open('GET', window.forumURL+section,true);
+	window.xhttp.send();
+
+
+  // Funções de usuário logo abaixo...
 
 	$scope.doRefresh = function(){
-    xhttp.onreadystatechange = xhttpRequestHandle;
-  	xhttp.open('GET', forumURL+section,true);
-  	xhttp.send();
+    window.xhttp.onreadystatechange = xhttpRequestHandle;
+  	window.xhttp.open('GET', window.forumURL+section,true);
+  	window.xhttp.send();
 	};
 
   $scope.goBack = function(){
@@ -209,46 +296,47 @@ angular.module('starter', ['ionic'])
 }])
 
 .controller('postsController',['$rootScope','$scope','$stateParams','$sce','$state','$location','$ionicScrollDelegate',function($rootScope,$scope,$stateParams,$sce,$state,$location,$ionicScrollDelegate){
+  // Controller do tópico...
+  // Aqui o usuário vai poder visualizar os posts (respostas ao tópico)
+  // Vai poder responder, avaliar o tópico, negativar, positivar, quotar e mandar MP.
 
   if($rootScope.lastMsg) $scope.actualPage = $rootScope.numberPages;
   $scope.actualPage = 1;
 
-  if($rootScope.isLogged)
-    topicBrowser = window.open('http://forum.jogos.uol.com.br/_t_'+tpcId,'_blank','hidden=yes');
+  if($rootScope.isLogged) console.log(null);
+    // redireciona o bot pra edit_profile...
 
-	xhttp.onreadystatechange = function(){
-		if(xhttp.readyState == 4 && xhttp.status == 200){
-      forum.innerHTML = xhttp.responseText;
+  // <-- Códigozinho para extrair e tratar dados dos tópicos... -->
+	window.xhttp.onreadystatechange = function(){
+		if(window.xhttp.readyState == 4 && window.xhttp.status == 200){
+      forum.innerHTML = window.xhttp.responseText;
       // extração dos dados do fórum
-      $scope.secTitle = forum.getElementsByClassName('breadcrumb-actual-page')[0].innerHTML;
-      $scope.topicTitle = forum.getElementsByClassName('titleTopic')[0].getElementsByTagName('h1')[0].innerHTML;
+      $scope.secTitle = window.forum.getElementsByClassName('breadcrumb-actual-page')[0].innerHTML;
+      $scope.topicTitle = window.forum.getElementsByClassName('titleTopic')[0].getElementsByTagName('h1')[0].innerHTML;
       firstPage = false;
       if($scope.actualPage===1){
         firstPage = true;
-        rawTopic = forum.getElementsByClassName('autoClear  topicRow  post')[0];
-        topicDate = forum.getElementsByClassName('topic-date')[0].innerHTML;
-        topicRating = forum.getElementsByClassName('stars-li')[0];
+        rawTopic = window.forum.getElementsByClassName('autoClear  topicRow  post')[0];
+        topicDate = window.forum.getElementsByClassName('topic-date')[0].innerHTML;
+        topicRating = window.forum.getElementsByClassName('stars-li')[0];
       }
       $scope.firstPage = firstPage;
-      rawPosts = forum.getElementsByClassName('autoClear  postRow  post');
-      postsDates = forum.getElementsByClassName('left publishDate');
-      postRating = forum.getElementsByClassName('votingResult');
+      rawPosts = window.forum.getElementsByClassName('autoClear  postRow  post');
+      postsDates = window.forum.getElementsByClassName('left publishDate');
+      postRating = window.forum.getElementsByClassName('votingResult');
 
-      postsAuthors = forum.getElementsByClassName('userNickname');
+      postsAuthors = window.forum.getElementsByClassName('userNickname');
 
-      userContainer = forum.getElementsByClassName('left post-user');
+      userContainer = window.forum.getElementsByClassName('left post-user');
       avatars = [];
       for (i=0; i<postsAuthors.length; i++){
         avatars[i] = userContainer[i].getElementsByTagName('img')[0].getAttribute('src');
       }
-      descs = forum.getElementsByClassName('descricao');
-      levels = forum.getElementsByClassName('userLevel');
-      postsText = forum.getElementsByClassName('texto');
-
-      // tratamento das informções
+      descs = window.forum.getElementsByClassName('descricao');
+      levels = window.forum.getElementsByClassName('userLevel');
+      postsText = window.forum.getElementsByClassName('texto');
       $scope.posts = angular.copy([]);
       posts = [];
-      //insert some 'for' here
       for (i=0; i<postsAuthors.length; i++){
         tmpPost = {
           postAuthor: postsAuthors[i].getElementsByTagName('a')[0].innerHTML,
@@ -262,16 +350,15 @@ angular.module('starter', ['ionic'])
         }
         posts[i] = tmpPost;
       }
-      // joga na view
       $scope.posts = posts;
-      $scope.$apply();
+      $scope.$apply(); // vide linha 249.
       $ionicScrollDelegate.scrollTop();
 		}
 	}
 
-  topic = $stateParams.topc;
-  xhttp.open('GET', forumURL+topic,true);
-	xhttp.send();
+  var topic = $stateParams.topc;
+  window.xhttp.open('GET', window.forumURL+topic,true);
+	window.xhttp.send();
 
   $scope.goBack = function(){
     $state.go('section',null,{reload:true});
@@ -280,8 +367,8 @@ angular.module('starter', ['ionic'])
   $scope.goToPage = function(nP,lastMsg){
     if(lastMsg) nP = $rootScope.numberPages;
     $scope.actualPage = nP;
-    xhttp.open('GET', forumURL+topic+'?page='+nP,true);
-    xhttp.send();
+    window.xhttp.open('GET', window.forumURL+topic+'?page='+nP,true);
+    window.xhttp.send();
   }
   $scope.goNext = function(){
     $scope.actualPage++;
@@ -289,8 +376,8 @@ angular.module('starter', ['ionic'])
       $scope.actualPage--;
       return;
     }
-    xhttp.open('GET', forumURL+topic+'?page='+$scope.actualPage,true);
-    xhttp.send();
+    window.xhttp.open('GET', window.forumURL+topic+'?page='+$scope.actualPage,true);
+    window.xhttp.send();
   }
   $scope.goPrev = function(){
     $scope.actualPage--;
@@ -298,8 +385,8 @@ angular.module('starter', ['ionic'])
       $scope.actualPage++;
       return;
     }
-    xhttp.open('GET', forumURL+topic+'?page='+$scope.actualPage,true);
-    xhttp.send();
+    window.xhttp.open('GET', window.forumURL+topic+'?page='+$scope.actualPage,true);
+    window.xhttp.send();
   }
   $scope.goResp = function(mode){
     $rootScope.postMode = mode;
